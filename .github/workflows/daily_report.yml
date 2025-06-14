@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # 允许手动触发
   schedule:
     # 使用 cron 语法，在每天的 UTC 时间 22:00 执行
-    # (对应北京时间早上 6:00)
+    # (对应北京时间第二天早上 6:00)
     - cron: '0 22 * * *'
 
 jobs:
