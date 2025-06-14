@@ -27,11 +27,11 @@ jobs:
       # 步骤1：获取代码
       # 把仓库里的代码下载到虚拟机上
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # 步骤2：设置 Python 环境
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11' # 指定 Python 版本
 
@@ -50,7 +50,7 @@ jobs:
 
       # 步骤5：上传工件
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           path: './' # 上传整个目录，因为 HTML 文件在根目录
 
@@ -63,4 +63,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1 
+        uses: actions/deploy-pages@v4 
