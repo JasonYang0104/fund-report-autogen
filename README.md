@@ -28,9 +28,7 @@
 
 你可以直接通过以下链接，随时访问由机器人每日自动更新的最新报告：
 
-➡️ **[点击查看最新基金净值报告](https://htmlpreview.github.io/?https://github.com/JasonYang0104/fund-report-autogen/blob/main/fund_report.html)**
-
-*(注：htmlpreview.github.io 是一个能直接在浏览器中预览 GitHub 仓库中 HTML 文件的免费服务)*
+➡️ **[点击查看最新基金净值报告](https://jasonyang0104.github.io/fund-report-autogen/)**
 
 ## 🛠️ 如何定制
 
