@@ -1,0 +1,45 @@
+# .github/workflows/daily_report.yml
+
+name: Generate Daily Fund Report
+
+on:
+  # 触发工作流的事件
+  workflow_dispatch: # 允许手动触发
+  schedule:
+    # 使用 cron 语法，在每天的 UTC 时间 2:00 执行
+    # (对应北京时间上午 10:00)
+    - cron: '0 2 * * *'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # 使用最新的 Ubuntu 系统作为运行环境
+    steps:
+      # 步骤1：获取代码
+      # 把仓库里的代码下载到虚拟机上
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 步骤2：设置 Python 环境
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11' # 指定 Python 版本
+
+      # 步骤3：安装依赖库
+      # 读取 requirements.txt 文件并安装所有库
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 步骤4：运行我们的报告生成脚本
+      - name: Run script to generate report
+        run: python query_fund_nav.py
+
+      # 步骤5：提交更新后的报告文件
+      # 将新生成的 fund_report.html 文件提交回仓库
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'docs: Auto-generate daily fund report'
+          file_pattern: 'fund_report.html' 
