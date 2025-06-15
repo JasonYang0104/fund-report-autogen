@@ -7,14 +7,6 @@ import datetime
 
 # --- 核心配置区 ---
 
-# 添加伪装头，模拟浏览器访问，这是解决反爬虫的关键
-ak.set_PROXY(http_proxy=None, https_proxy=None)
-ak.set_TIMEOUT(30)
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-}
-ak.set_REQUEST_HEADERS(headers)
-
 # --- 配置区 ---
 # 定义要查询的基金代码和对应的名称
 # ts_code 规则：基金代码+".OF"
