@@ -23,6 +23,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest # 使用最新的 Ubuntu 系统作为运行环境
+    env:
+      TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
     steps:
       # 步骤1：获取代码
       # 把仓库里的代码下载到虚拟机上
