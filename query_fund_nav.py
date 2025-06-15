@@ -109,9 +109,9 @@ def generate_html_report(all_data_df: pd.DataFrame, fund_info: dict):
     </html>
     """
 
-    with open("fund_report.html", "w", encoding="utf-8") as f:
+    with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_template)
-    print("HTML报告已生成: fund_report.html")
+    print("HTML报告已生成: index.html")
 
 
 if __name__ == "__main__":
