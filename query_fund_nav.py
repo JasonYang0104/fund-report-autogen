@@ -26,20 +26,20 @@ def get_fund_net_value(fund_code: str, days: int) -> pd.DataFrame:
     end_date = datetime.datetime.now().strftime("%Y%m%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y%m%d")
     try:
-        # 切换到 fund123.cn 的数据源，因为它可能更稳定
-        fund_data = ak.fund_nav_fund123(symbol=fund_code, start_date=start_date, end_date=end_date)
-        # fund123 的列名是 '净值日期', '单位净值', '累计净值', '涨跌幅'
-        # 我们只需要确保我们使用的列名是正确的
-        # 为了兼容后续代码，我们将'涨跌幅'列重命名为'日增长率'
-        if '涨跌幅' in fund_data.columns:
-            fund_data.rename(columns={'涨跌幅': '日增长率'}, inplace=True)
-        else:
-            fund_data['日增长率'] = "N/A"
+        # 修正：使用真实存在的、正确的函数
+        fund_data = ak.fund_open_fund_info_em(fund_code=fund_code, indicator="单位净值走势")
+        
+        # 对返回的数据进行健壮性检查
+        if fund_data is None or fund_data.empty:
+            print(f"警告: 基金 {fund_code} 的数据返回为空。")
+            return pd.DataFrame()
             
         fund_data['净值日期'] = pd.to_datetime(fund_data['净值日期'])
-        return fund_data
+        # 筛选指定日期范围内的数据
+        mask = (fund_data['净值日期'] >= start_date) & (fund_data['净值日期'] <= end_date)
+        return fund_data.loc[mask]
     except Exception as e:
-        print(f"获取基金 {fund_code} 数据失败 (数据源: fund123): {e}")
+        print(f"获取基金 {fund_code} 数据失败 (数据源: eastmoney): {e}")
         return pd.DataFrame()
 
 def generate_html_report(all_data_df: pd.DataFrame, fund_info: dict):
@@ -79,6 +79,10 @@ def generate_html_report(all_data_df: pd.DataFrame, fund_info: dict):
         # 调整列顺序，确保'日增长率'存在
         display_columns = ['基金代码', '基金名称', '净值日期', '单位净值']
         if '日增长率' in latest_data.columns:
+            display_columns.append('日增长率')
+        else:
+            # 如果不存在，可能是因为数据源没有提供，给一个默认值
+            latest_data['日增长率'] = "N/A"
             display_columns.append('日增长率')
         
         latest_data = latest_data[display_columns]
