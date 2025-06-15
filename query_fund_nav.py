@@ -26,13 +26,20 @@ def get_fund_net_value(fund_code: str, days: int) -> pd.DataFrame:
     end_date = datetime.datetime.now().strftime("%Y%m%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y%m%d")
     try:
-        fund_data = ak.fund_open_fund_info_em(fund_code=fund_code, indicator="单位净值走势")
+        # 切换到 fund123.cn 的数据源，因为它可能更稳定
+        fund_data = ak.fund_nav_fund123(symbol=fund_code, start_date=start_date, end_date=end_date)
+        # fund123 的列名是 '净值日期', '单位净值', '累计净值', '涨跌幅'
+        # 我们只需要确保我们使用的列名是正确的
+        # 为了兼容后续代码，我们将'涨跌幅'列重命名为'日增长率'
+        if '涨跌幅' in fund_data.columns:
+            fund_data.rename(columns={'涨跌幅': '日增长率'}, inplace=True)
+        else:
+            fund_data['日增长率'] = "N/A"
+            
         fund_data['净值日期'] = pd.to_datetime(fund_data['净值日期'])
-        # 筛选指定日期范围内的数据
-        mask = (fund_data['净值日期'] >= start_date) & (fund_data['净值日期'] <= end_date)
-        return fund_data.loc[mask]
+        return fund_data
     except Exception as e:
-        print(f"获取基金 {fund_code} 数据失败: {e}")
+        print(f"获取基金 {fund_code} 数据失败 (数据源: fund123): {e}")
         return pd.DataFrame()
 
 def generate_html_report(all_data_df: pd.DataFrame, fund_info: dict):
@@ -69,8 +76,12 @@ def generate_html_report(all_data_df: pd.DataFrame, fund_info: dict):
         # 为了报告美观，我们只展示最新的数据
         latest_data = all_data_df.sort_values(by=['基金代码', '净值日期'], ascending=[True, False]).groupby('基金代码').first().reset_index()
         latest_data['基金名称'] = latest_data['基金代码'].map(fund_info)
-        # 调整列顺序
-        latest_data = latest_data[['基金代码', '基金名称', '净值日期', '单位净值', '日增长率']]
+        # 调整列顺序，确保'日增长率'存在
+        display_columns = ['基金代码', '基金名称', '净值日期', '单位净值']
+        if '日增长率' in latest_data.columns:
+            display_columns.append('日增长率')
+        
+        latest_data = latest_data[display_columns]
         latest_data['净值日期'] = latest_data['净值日期'].dt.strftime('%Y-%m-%d')
         table_html = latest_data.to_html(index=False, border=0, classes='table table-striped table-hover')
 
