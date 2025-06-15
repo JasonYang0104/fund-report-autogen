@@ -1,4 +1,5 @@
-import akshare as ak
+import os
+import tushare as ts
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -16,6 +17,7 @@ ak.set_REQUEST_HEADERS(headers)
 
 # --- 配置区 ---
 # 定义要查询的基金代码和对应的名称
+# ts_code 规则：基金代码+".OF"
 fund_name_map = {
     "017437": "华宝纳斯达克精选股票",
     "018064": "华夏标普500ETF联接",
@@ -31,25 +33,28 @@ fund_name_map = {
 days_to_fetch = 7
 # --- 配置区结束 ---
 
+# 初始化 tushare
+ts.set_token(os.getenv("TUSHARE_TOKEN"))
+pro = ts.pro_api()
+
 def get_fund_net_value(fund_code: str, days: int) -> pd.DataFrame:
     """获取单个基金指定天数内的历史净值数据"""
     end_date = datetime.datetime.now().strftime("%Y%m%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y%m%d")
     try:
-        # 修正：使用真实存在的、正确的函数
-        fund_data = ak.fund_open_fund_info_em(fund_code=fund_code, indicator="单位净值走势")
-        
-        # 对返回的数据进行健壮性检查
+        ts_code = f"{fund_code}.OF"
+        fund_data = pro.fund_nav(ts_code=ts_code, start_date=start_date, end_date=end_date)
+
         if fund_data is None or fund_data.empty:
             print(f"警告: 基金 {fund_code} 的数据返回为空。")
             return pd.DataFrame()
-            
+
+        # Tushare 字段调整
+        fund_data = fund_data[['nav_date', 'unit_nav']].rename(columns={'nav_date': '净值日期', 'unit_nav': '单位净值'})
         fund_data['净值日期'] = pd.to_datetime(fund_data['净值日期'])
-        # 筛选指定日期范围内的数据
-        mask = (fund_data['净值日期'] >= start_date) & (fund_data['净值日期'] <= end_date)
-        return fund_data.loc[mask]
+        return fund_data
     except Exception as e:
-        print(f"获取基金 {fund_code} 数据失败 (数据源: eastmoney): {e}")
+        print(f"获取基金 {fund_code} 数据失败 (数据源: Tushare): {e}")
         return pd.DataFrame()
 
 def generate_html_report(all_data_df: pd.DataFrame, fund_info: dict):
