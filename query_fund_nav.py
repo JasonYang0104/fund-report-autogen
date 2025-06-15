@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import datetime
+import akshare as ak
 
 # --- 核心配置区 ---
 
@@ -33,20 +34,37 @@ def get_fund_net_value(fund_code: str, days: int) -> pd.DataFrame:
     """获取单个基金指定天数内的历史净值数据"""
     end_date = datetime.datetime.now().strftime("%Y%m%d")
     start_date = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y%m%d")
+    # 1) 先尝试 Tushare
     try:
         ts_code = f"{fund_code}.OF"
         fund_data = pro.fund_nav(ts_code=ts_code, start_date=start_date, end_date=end_date)
 
-        if fund_data is None or fund_data.empty:
-            print(f"警告: 基金 {fund_code} 的数据返回为空。")
+        # Tushare 若积分不足, 会抛异常或返回空表
+        if fund_data is not None and not fund_data.empty:
+            # 字段调整
+            fund_data = fund_data[['nav_date', 'unit_nav']].rename(columns={'nav_date': '净值日期', 'unit_nav': '单位净值'})
+            fund_data['净值日期'] = pd.to_datetime(fund_data['净值日期'])
+            return fund_data
+        else:
+            print(f"Tushare 返回空数据，准备切换 AkShare 数据源 -> 基金 {fund_code}")
+    except Exception as e:
+        print(f"获取基金 {fund_code} 数据失败 (数据源: Tushare): {e}\n尝试使用 AkShare 备用源 …")
+
+    # 2) 尝试 AkShare 作为备用
+    try:
+        ak_df = ak.fund_open_fund_info_em(fund=fund_code)
+        if ak_df is None or ak_df.empty:
+            print(f"AkShare 也未取到基金 {fund_code} 数据。")
             return pd.DataFrame()
 
-        # Tushare 字段调整
-        fund_data = fund_data[['nav_date', 'unit_nav']].rename(columns={'nav_date': '净值日期', 'unit_nav': '单位净值'})
-        fund_data['净值日期'] = pd.to_datetime(fund_data['净值日期'])
-        return fund_data
+        ak_df = ak_df[['净值日期', '单位净值']].copy()
+        ak_df['净值日期'] = pd.to_datetime(ak_df['净值日期'])
+        # 仅保留最近 N 天
+        cutoff_dt = datetime.datetime.now() - datetime.timedelta(days=days)
+        ak_df = ak_df[ak_df['净值日期'] >= cutoff_dt]
+        return ak_df
     except Exception as e:
-        print(f"获取基金 {fund_code} 数据失败 (数据源: Tushare): {e}")
+        print(f"获取基金 {fund_code} 数据失败 (数据源: AkShare): {e}")
         return pd.DataFrame()
 
 def generate_html_report(all_data_df: pd.DataFrame, fund_info: dict):
